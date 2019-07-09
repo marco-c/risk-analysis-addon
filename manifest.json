@@ -1,0 +1,23 @@
+{
+  "author": "Marco Castelluccio",
+  "manifest_version": 2,
+  "name": "Gecko Risk Analysis",
+  "version": "0.0.1",
+  "icons": {
+    "488": "assets/risk_analysis.jpg"
+  },
+  "description": "Extension that shows risk analysis results on Phabricator.",
+  "content_scripts": [
+    {
+      "matches": ["*://phabricator.services.mozilla.com/D*"],
+      "js": ["risk_analysis.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "https://index.taskcluster.net/v1/task/project.relman.bugbug.classify_patch.diff.*/public/probs,json",
+    "https://queue.taskcluster.net/v1/task/*/public/probs,json",
+    "https://taskcluster-artifacts.net/*/public/probs,json"
+  ],
+  "homepage_url": "https://github.com/marco-c/risk-analysis-addon"
+}
