@@ -9,7 +9,7 @@ function getRiskAnalysisURL(diffID, artifact) {
 }
 
 async function getRiskAnalysisResult(diffID) {
-  const response = await fetch(getRiskAnalysisURL(diffID, "probs,json"));
+  const response = await fetch(getRiskAnalysisURL(diffID, "probs.json"));
   if (!response.ok) {
     throw new Error("Error fetching risk analysis results for this diff.");
   }
