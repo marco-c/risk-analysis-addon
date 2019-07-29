@@ -16,6 +16,14 @@ async function getRiskAnalysisResult(diffID) {
   return await response.json();
 }
 
+async function getRiskAnalysisFeatures(diffID) {
+  const response = await fetch(getRiskAnalysisURL(diffID, "importances.json"));
+  if (!response.ok) {
+    throw new Error("Error fetching risk analysis features for this diff.");
+  }
+  return await response.json();
+}
+
 const diffIDPattern = RegExp(/Diff (\d+)/);
 
 async function inject() {
@@ -48,6 +56,7 @@ async function inject() {
   const diffDetailBox = diffDetail.parentElement.parentElement.parentElement.parentElement.parentElement;
 
   const riskAnalysisResult = await getRiskAnalysisResult(diffID);
+  const riskAnalysisFeatures = await getRiskAnalysisFeatures(diffID);
 
   const nonRiskyProb = riskAnalysisResult[0];
   const riskyProb = riskAnalysisResult[1];
@@ -66,6 +75,22 @@ async function inject() {
   riskAnalysisFrame.width = "100%";
 
   riskAnalysisContent.firstChild.replaceWith(riskAnalysisFrame);
+
+  let riskAnalysisLegend = document.createElement("div");
+  let riskAnalysisLegendUl = document.createElement("ul");
+  for (let [index, name, value] of riskAnalysisFeatures) {
+    let riskAnalysisLegendLi = document.createElement("li");
+    riskAnalysisLegendLi.textContent = `${index}. ${name}`;
+    // TODO: Remove after bugbug fixes this.
+    if (value.startsWith("(")) {
+      value = value.slice(1, -1);
+    }
+    value = Number(value);
+    riskAnalysisLegendLi.style.color = value > 0 ? "rgb(255, 13, 87)" : "rgb(30, 136, 229)";
+    riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
+  }
+  riskAnalysisLegend.appendChild(riskAnalysisLegendUl);
+  riskAnalysisContent.appendChild(riskAnalysisLegend);
 
   diffDetailBox.parentNode.insertBefore(riskAnalysisBox, diffDetailBox.nextSibling);
 }
