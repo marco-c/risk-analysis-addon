@@ -92,6 +92,15 @@ async function inject() {
   riskAnalysisLegend.appendChild(riskAnalysisLegendUl);
   riskAnalysisContent.appendChild(riskAnalysisLegend);
 
+  riskAnalysisContent.appendChild(document.createElement("br"));
+
+  let riskAnalysisOverallFeatures = document.createElement("a");
+  riskAnalysisOverallFeatures.textContent = "See the most important features considered by the model";
+  riskAnalysisOverallFeatures.href = "https://index.taskcluster.net/v1/task/project.relman.bugbug.train_regressor.latest/artifacts/public/feature_importance.png";
+  riskAnalysisOverallFeatures.target = "_blank";
+  riskAnalysisOverallFeatures.style.fontSize = "x-small";
+  riskAnalysisContent.appendChild(riskAnalysisOverallFeatures);
+
   diffDetailBox.parentNode.insertBefore(riskAnalysisBox, diffDetailBox.nextSibling);
 }
 
