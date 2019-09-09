@@ -24,35 +24,7 @@ async function getRiskAnalysisFeatures(diffID) {
   return await response.json();
 }
 
-const diffIDPattern = RegExp(/Diff (\d+)/);
-
-async function inject() {
-  let diffID = null;
-  let diffDetail = null;
-
-  const headers = document.querySelectorAll("span.phui-header-header");
-  for (const header of headers) {
-    if (header.textContent == "Diff Detail") {
-      diffDetail = header;
-      continue;
-    }
-
-    const result = header.textContent.match(diffIDPattern);
-    if (!result) {
-      continue;
-    }
-
-    diffID = result[1];
-  }
-
-  if (!diffID) {
-    throw new Error("Missing diff ID");
-  }
-
-  if (!diffDetail) {
-    throw new Error("Missing diff detail box");
-  }
-
+async function injectOverallResults(diffID, diffDetail) {
   const diffDetailBox = diffDetail.parentElement.parentElement.parentElement.parentElement.parentElement;
 
   const riskAnalysisResult = await getRiskAnalysisResult(diffID);
@@ -102,6 +74,141 @@ async function inject() {
   riskAnalysisContent.appendChild(riskAnalysisOverallFeatures);
 
   diffDetailBox.parentNode.insertBefore(riskAnalysisBox, diffDetailBox.nextSibling);
+}
+
+function createInlineComment(inlineCommentText) {
+  let inlineRow = document.createElement("tr");
+  inlineRow.classList.add("inline");
+  inlineRow.setAttribute("data-sigil", "inline-row");
+
+  let firstEmptyTd = document.createElement("td");
+  firstEmptyTd.classList.add("n");
+  let leftEmptyTd = document.createElement("td");
+  leftEmptyTd.classList.add("left");
+  let secondEmptyTd = document.createElement("td");
+  secondEmptyTd.classList.add("n");
+  let copyEmptyTd = document.createElement("td");
+  copyEmptyTd.classList.add("copy");
+
+  let contentTd = document.createElement("td");
+  contentTd.setAttribute("colspan", "2");
+
+  let inlineCommentDiv = document.createElement("div");
+  inlineCommentDiv.classList.add("differential-inline-comment");
+  inlineCommentDiv.setAttribute("data-sigil", "differential-inline-comment");
+
+  let inlineCommentDivHead = document.createElement("div");
+  inlineCommentDivHead.classList.add("differential-inline-comment-head", "grouped");
+  inlineCommentDivHead.setAttribute("data-sigil", "differential-inline-header");
+
+  let inlineCommentDivHeadLeft = document.createElement("div");
+  inlineCommentDivHeadLeft.classList.add("inline-head-left");
+  inlineCommentDivHeadLeft.textContent = "Risk Analysis Bot";
+
+  inlineCommentDivHead.appendChild(inlineCommentDivHeadLeft);
+
+  inlineCommentDiv.appendChild(inlineCommentDivHead);
+
+  let inlineCommentDivContent = document.createElement("div");
+  inlineCommentDivContent.classList.add("differential-inline-comment-content");
+
+  let inlineCommentDivContentContent = document.createElement("div");
+  inlineCommentDivContentContent.classList.add("phabricator-remarkup");
+
+  let inlineCommentDivContentContentP = document.createElement("p");
+  inlineCommentDivContentContentP.textContent = inlineCommentText;
+
+  inlineCommentDivContentContent.appendChild(inlineCommentDivContentContentP);
+
+  inlineCommentDivContent.appendChild(inlineCommentDivContentContent);
+
+  inlineCommentDiv.appendChild(inlineCommentDivContent);
+
+  contentTd.appendChild(inlineCommentDiv);
+
+  inlineRow.appendChild(firstEmptyTd);
+  inlineRow.appendChild(leftEmptyTd);
+  inlineRow.appendChild(secondEmptyTd);
+  inlineRow.appendChild(copyEmptyTd);
+  inlineRow.appendChild(contentTd);
+
+  return inlineRow;
+}
+
+function injectMethodLevelResults() {
+  /*let methods = [{
+      "name": "nsPresContext::PreferenceChanged",
+      "line": 436,
+  },
+  {
+      "name": "nsPresContext::Destroy",
+      "line": 252,
+  }];*/
+  let methods = [];
+
+  let blocks = document.querySelectorAll("div[data-sigil=differential-changeset]");
+  for (let block of blocks) {
+    let lines = block.querySelectorAll("table.differential-diff tbody tr td:nth-child(3)");
+    for (let line of lines) {
+      let lineNumber = parseInt(line.getAttribute("data-n"));
+      if (isNaN(lineNumber)) {
+        continue;
+      }
+
+      for (let i = methods.length - 1; i >= 0; i--) {
+        let method = methods[i];
+        if (lineNumber >= method["line"]) {
+          methods.splice(i, 1);
+
+          let inlineComment = createInlineComment(`The function '${method["name"]}' is risky.`);
+
+          line.parentNode.parentNode.insertBefore(inlineComment, line.parentNode.nextSibling);
+        }
+      }
+
+      if (methods.length == 0) {
+        break;
+      }
+    }
+
+    if (methods.length == 0) {
+      break;
+    }
+  }
+}
+
+const diffIDPattern = RegExp(/Diff (\d+)/);
+
+function inject() {
+  let diffID = null;
+  let diffDetail = null;
+
+  const headers = document.querySelectorAll("span.phui-header-header");
+  for (const header of headers) {
+    if (header.textContent == "Diff Detail") {
+      diffDetail = header;
+      continue;
+    }
+
+    const result = header.textContent.match(diffIDPattern);
+    if (!result) {
+      continue;
+    }
+
+    diffID = result[1];
+  }
+
+  if (!diffID) {
+    throw new Error("Missing diff ID");
+  }
+
+  if (!diffDetail) {
+    throw new Error("Missing diff detail box");
+  }
+
+  injectOverallResults(diffID, diffDetail);
+
+  injectMethodLevelResults();
 }
 
 inject();
