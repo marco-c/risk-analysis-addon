@@ -28,7 +28,7 @@ async function injectOverallResults(diffID, diffDetail) {
   const diffDetailBox = diffDetail.parentElement.parentElement.parentElement.parentElement.parentElement;
 
   const riskAnalysisResult = await getRiskAnalysisResult(diffID);
-  const riskAnalysisFeatures = await getRiskAnalysisFeatures(diffID);
+  const riskAnalysisFeaturesPromise = getRiskAnalysisFeatures(diffID);
 
   const nonRiskyProb = riskAnalysisResult[0];
   const riskyProb = riskAnalysisResult[1];
@@ -47,6 +47,8 @@ async function injectOverallResults(diffID, diffDetail) {
   riskAnalysisFrame.width = "100%";
 
   riskAnalysisContent.firstChild.replaceWith(riskAnalysisFrame);
+
+  const riskAnalysisFeatures = await riskAnalysisFeaturesPromise;
 
   let riskAnalysisLegend = document.createElement("div");
   let riskAnalysisLegendUl = document.createElement("ul");
