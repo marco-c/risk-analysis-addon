@@ -137,7 +137,7 @@ function createInlineComment(inlineCommentText) {
   return inlineRow;
 }
 
-function injectMethodLevelResults() {
+async function injectMethodLevelResults() {
   /*let methods = [{
       "name": "nsPresContext::PreferenceChanged",
       "line": 436,
@@ -181,7 +181,7 @@ function injectMethodLevelResults() {
 
 const diffIDPattern = RegExp(/Diff (\d+)/);
 
-function inject() {
+async function inject() {
   let diffID = null;
   let diffDetail = null;
 
@@ -208,9 +208,15 @@ function inject() {
     throw new Error("Missing diff detail box");
   }
 
-  injectOverallResults(diffID, diffDetail);
+  await injectOverallResults(diffID, diffDetail);
 
-  injectMethodLevelResults();
+  await injectMethodLevelResults();
 }
 
-inject();
+(async function() {
+  try {
+    await inject();
+  } catch (ex) {
+    console.error(ex);
+  }
+})();
