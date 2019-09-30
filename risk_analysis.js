@@ -52,7 +52,11 @@ async function injectOverallResults(diffID, diffDetail) {
 
   let riskAnalysisLegend = document.createElement("div");
   let riskAnalysisLegendUl = document.createElement("ul");
-  for (let [index, name, value] of riskAnalysisFeatures) {
+  for (let riskAnalysisFeature of riskAnalysisFeatures) {
+    let index = riskAnalysisFeature["index"];
+    let name = riskAnalysisFeature["name"];
+    let value = riskAnalysisFeature["value"];
+
     let riskAnalysisLegendLi = document.createElement("li");
     riskAnalysisLegendLi.textContent = `${index}. ${name}`;
     value = Number(value);
