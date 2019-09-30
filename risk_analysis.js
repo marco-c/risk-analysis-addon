@@ -54,16 +54,59 @@ async function injectOverallResults(diffID, diffDetail) {
 
   let riskAnalysisLegend = document.createElement("div");
   let riskAnalysisLegendUl = document.createElement("ul");
+  let featureCount = 3;
   for (let riskAnalysisFeature of riskAnalysisFeatures) {
     let index = riskAnalysisFeature["index"];
     let name = riskAnalysisFeature["name"];
+    let shap_value = Number(riskAnalysisFeature["shap"]);
     let value = riskAnalysisFeature["value"];
 
-    let riskAnalysisLegendLi = document.createElement("li");
-    riskAnalysisLegendLi.textContent = `${index}. ${name}`;
-    value = Number(value);
-    riskAnalysisLegendLi.style.color = value > 0 ? "rgb(255, 13, 87)" : "rgb(30, 136, 229)";
-    riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
+    let monotonicity = riskAnalysisFeature["spearman"][0];
+    let median_bug_introducing = riskAnalysisFeature["median_bug_introducing"];
+    let median_clean = riskAnalysisFeature["median_clean"];
+
+    let message;
+    // If it contributes negatively to the prediction, it is monotonic positive and its value is closer to the median for bug-introducing commits rather than clean.
+    if (shap_value > 0 && monotonicity > 0 && Math.abs(value - median_bug_introducing) < Math.abs(value - median_clean)) {
+      let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_higher_than_median"]);
+      message = `${index}. ${name} is too high (${value}). ${perc}% of patches which introduced regressions had a high ${name}.`;
+    }
+    // If it contributes negatively to the prediction, it is monotonic negative and its value is closer to the median for buggy commits rather than clean.
+    else if (shap_value > 0 && monotonicity < 0 && Math.abs(value - median_bug_introducing) < Math.abs(value - median_clean)) {
+      let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_lower_than_median"]);
+      message = `${index}. ${name} is too low (${value}). ${perc}% of patches which introduced regressions had a low ${name}.`;
+    }
+    // XXX: For now, we only want to show features which are increasing the risk, not features which are driving it down.
+    // If it contributes positively to the prediction, it is monotonic positive and its value is closer to the median for clean commits rather than bug-introducing.
+    /* else if (shap_value < 0 && monotonicity > 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
+      let perc = Math.round(100 * riskAnalysisFeature["perc_clean_values_lower_than_median"]);
+      message = `${index}. ${name} is low (${value}). ${perc}% of patches which did not introduce regressions had a low ${name}.`;
+    }
+    // If it contributes positively to the prediction, it is monotonic negative and its value is closer to the median for clean commits rather than bug-introducing
+    else if (shap_value < 0 && monotonicity < 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
+      let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_higher_than_median"]);
+      console.log(riskAnalysisFeature);
+      message = `${index}. ${name} is high (${value}). ${perc}% of patches which did not introduce regressions had a high ${name}.`;
+    } */
+    // We can't say much otherwise, e.g. a case like:
+    // # of times the components were touched before (max)
+    // shap value: +0.14288196611463377
+    // monotonicity:  SpearmanrResult(correlation=-0.06891128912176979, pvalue=2.488375295591371e-125)
+    // value:  22052.0
+    // mean for y == 0 is: 4921.635160123906
+    // mean for y == 1 is: 4079.935478215131
+
+    if (message) {
+      let riskAnalysisLegendLi = document.createElement("li");
+      riskAnalysisLegendLi.textContent = message;
+      riskAnalysisLegendLi.style.color = shap_value > 0 ? "rgb(255, 13, 87)" : "rgb(30, 136, 229)";
+      riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
+
+      featureCount--;
+      if (featureCount == 0) {
+        break;
+      }
+    }
   }
   riskAnalysisLegend.appendChild(riskAnalysisLegendUl);
   riskAnalysisContent.appendChild(riskAnalysisLegend);
