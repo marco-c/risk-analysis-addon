@@ -24,6 +24,14 @@ async function getRiskAnalysisFeatures(diffID) {
   return await response.json();
 }
 
+async function getMethodLevelRiskAnalysisResults(diffID) {
+  const response = await fetch(getRiskAnalysisURL(diffID, "method_level.json"));
+  if (!response.ok) {
+    throw new Error("Error fetching method-level risk analysis for this diff.");
+  }
+  return await response.json();
+}
+
 async function injectOverallResults(diffID, diffDetail) {
   const diffDetailBox = diffDetail.parentElement.parentElement.parentElement.parentElement.parentElement;
 
@@ -182,19 +190,15 @@ function createInlineComment(inlineCommentText) {
   return inlineRow;
 }
 
-async function injectMethodLevelResults() {
-  /*let methods = [{
-      "name": "nsPresContext::PreferenceChanged",
-      "line": 436,
-  },
-  {
-      "name": "nsPresContext::Destroy",
-      "line": 252,
-  }];*/
-  let methods = [];
+async function injectMethodLevelResults(diffID) {
+  let methods = await getMethodLevelRiskAnalysisResults(diffID);
+
+  methods = methods.filter(method => method["prediction"]);
 
   let blocks = document.querySelectorAll("div[data-sigil=differential-changeset]");
   for (let block of blocks) {
+    let fileName = block.querySelector("h1.differential-file-icon-header").textContent;
+
     let lines = block.querySelectorAll("table.differential-diff tbody tr td:nth-child(3)");
     for (let line of lines) {
       let lineNumber = parseInt(line.getAttribute("data-n"));
@@ -204,10 +208,10 @@ async function injectMethodLevelResults() {
 
       for (let i = methods.length - 1; i >= 0; i--) {
         let method = methods[i];
-        if (lineNumber >= method["line"]) {
+        if (method["file_name"] == fileName && lineNumber >= method["method_start_line"]) {
           methods.splice(i, 1);
 
-          let inlineComment = createInlineComment(`The function '${method["name"]}' is risky.`);
+          let inlineComment = createInlineComment(`The function '${method["method_name"]}' is risky.`);
 
           line.parentNode.parentNode.insertBefore(inlineComment, line.parentNode.nextSibling);
         }
@@ -255,7 +259,7 @@ async function inject() {
 
   await injectOverallResults(diffID, diffDetail);
 
-  await injectMethodLevelResults();
+  await injectMethodLevelResults(diffID);
 }
 
 (async function() {
