@@ -40,15 +40,19 @@ async function injectOverallResults(diffID, diffDetail) {
 
   const riskAnalysisResult = await riskAnalysisResultPromise;
 
+  const RED = "rgb(255, 13, 87)";
+  const BLUE = "rgb(30, 136, 229)";
+
   const nonRiskyProb = riskAnalysisResult[0];
   const riskyProb = riskAnalysisResult[1];
   const riskyText = riskyProb > nonRiskyProb ? "Risky" : "Not risky"
+  const riskyColor = riskyProb > nonRiskyProb ? RED : BLUE;
   const confidence = Math.round(100 * (riskyProb > nonRiskyProb ? riskyProb : nonRiskyProb));
 
   let riskAnalysisBox = diffDetailBox.cloneNode(true);
 
   let riskAnalysisTitle = riskAnalysisBox.querySelector("span.phui-header-header");
-  riskAnalysisTitle.textContent = `Diff Risk Analysis - ${riskyText} with ${confidence}% confidence`;
+  riskAnalysisTitle.innerHTML = `Diff Risk Analysis - <span style="color:${riskyColor};">${riskyText}</span> with ${confidence}% confidence`;
 
   let riskAnalysisContent = riskAnalysisBox.querySelector('div[data-sigil=phui-tab-group-view]');
 
