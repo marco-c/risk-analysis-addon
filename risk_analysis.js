@@ -66,6 +66,7 @@ async function injectOverallResults(diffID, diffDetail) {
 
   let riskAnalysisLegend = document.createElement("div");
   let riskAnalysisLegendUl = document.createElement("ul");
+  riskAnalysisLegendUl.style["list-style-type"] = "upper-roman";
   let featureCount = 3;
   for (let riskAnalysisFeature of riskAnalysisFeatures) {
     let index = riskAnalysisFeature["index"];
@@ -111,6 +112,7 @@ async function injectOverallResults(diffID, diffDetail) {
     if (message) {
       let riskAnalysisLegendLi = document.createElement("li");
       riskAnalysisLegendLi.innerHTML = message;
+      riskAnalysisLegendLi.style["margin-left"] = "15px";
       riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
 
       featureCount--;
