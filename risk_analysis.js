@@ -81,24 +81,24 @@ async function injectOverallResults(diffID, diffDetail) {
     // If it contributes negatively to the prediction, it is monotonic positive and its value is closer to the median for bug-introducing commits rather than clean.
     if (shap_value > 0 && monotonicity > 0 && Math.abs(value - median_bug_introducing) < Math.abs(value - median_clean)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_higher_than_median"]);
-      message = `${index}. ${name} is too high (${value}). ${perc}% of patches which introduced regressions had a high ${name}.`;
+      message = `<b>${name}</b> is <span style="font-weight:bold;color:${RED}">too large</span> (${value}), as in ${perc}% of patches introducing regressions.`;
     }
     // If it contributes negatively to the prediction, it is monotonic negative and its value is closer to the median for buggy commits rather than clean.
     else if (shap_value > 0 && monotonicity < 0 && Math.abs(value - median_bug_introducing) < Math.abs(value - median_clean)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_lower_than_median"]);
-      message = `${index}. ${name} is too low (${value}). ${perc}% of patches which introduced regressions had a low ${name}.`;
+      message = `<b>${name}</b> is <span style="font-weight:bold;color:${RED}">too small</span> (${value}), as in ${perc}% of patches introducing regressions.`;
     }
     // XXX: For now, we only want to show features which are increasing the risk, not features which are driving it down.
     // If it contributes positively to the prediction, it is monotonic positive and its value is closer to the median for clean commits rather than bug-introducing.
     /* else if (shap_value < 0 && monotonicity > 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_clean_values_lower_than_median"]);
-      message = `${index}. ${name} is low (${value}). ${perc}% of patches which did not introduce regressions had a low ${name}.`;
+      message = `${index}. ${name} is <span style="font-weight:bold;color:${BLUE}">low</span> (${value}), as in ${perc}% of patches not introducing regressions.`;
     }
     // If it contributes positively to the prediction, it is monotonic negative and its value is closer to the median for clean commits rather than bug-introducing
     else if (shap_value < 0 && monotonicity < 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_higher_than_median"]);
       console.log(riskAnalysisFeature);
-      message = `${index}. ${name} is high (${value}). ${perc}% of patches which did not introduce regressions had a high ${name}.`;
+      message = `${index}. ${name} is <span style="font-weight:bold;color:${BLUE}">high</span> (${value}), as in ${perc}% of patches not introducing regressions.`;
     } */
     // We can't say much otherwise, e.g. a case like:
     // # of times the components were touched before (max)
@@ -110,8 +110,7 @@ async function injectOverallResults(diffID, diffDetail) {
 
     if (message) {
       let riskAnalysisLegendLi = document.createElement("li");
-      riskAnalysisLegendLi.textContent = message;
-      riskAnalysisLegendLi.style.color = shap_value > 0 ? "rgb(255, 13, 87)" : "rgb(30, 136, 229)";
+      riskAnalysisLegendLi.innerHTML = message;
       riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
 
       featureCount--;
