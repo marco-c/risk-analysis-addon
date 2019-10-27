@@ -2,7 +2,7 @@
   "author": "Marco Castelluccio",
   "manifest_version": 2,
   "name": "Gecko Risk Analysis",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "icons": {
     "488": "assets/risk_analysis.jpg"
   },
