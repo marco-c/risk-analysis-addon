@@ -54,24 +54,56 @@ async function injectOverallResults(diffID, diffDetail) {
   let riskAnalysisTitle = riskAnalysisBox.querySelector("span.phui-header-header");
   riskAnalysisTitle.innerHTML = `Diff Risk Analysis - <span style="color:${riskyColor};">${riskyText}</span> with ${confidence}% confidence`;
 
+  function highlight(index) {
+    d3.select(`#feature_${index}_text`)
+      .transition()
+      .ease(d3.easeCubic)
+      .duration('200')
+      .style("font-size", "21px");
+
+    d3.select(`#feature_${index}_bar`)
+      .transition()
+      .ease(d3.easeCubic)
+      .duration('200')
+      .style("filter", "url(#glow)");
+  }
+
+  function dehighlight(index) {
+    d3.select(`#feature_${index}_text`)
+      .transition()
+      .ease(d3.easeCubic)
+      .duration('200')
+      .style("font-size", null);
+
+    d3.select(`#feature_${index}_bar`)
+      .transition()
+      .ease(d3.easeCubic)
+      .duration('200')
+      .style("filter", null);
+  }
+
   let riskAnalysisContent = riskAnalysisBox.querySelector('div[data-sigil=phui-tab-group-view]');
 
-  let riskAnalysisFrame = document.createElement("iframe");
-  riskAnalysisFrame.src = getRiskAnalysisURL(diffID, "importance.html");
-  riskAnalysisFrame.width = "100%";
+  let riskAnalysisGraph = document.createElement("div");
+  riskAnalysisGraph.id = "riskAnalysisGraph";
+  riskAnalysisGraph.width = "100%";
+  riskAnalysisGraph.height = 90;
 
-  riskAnalysisContent.firstChild.replaceWith(riskAnalysisFrame);
+  riskAnalysisContent.firstChild.replaceWith(riskAnalysisGraph);
 
-  const riskAnalysisFeatures = await riskAnalysisFeaturesPromise;
+  let riskAnalysisFeatures = await riskAnalysisFeaturesPromise;
+  // TODO: Fix this directly in the json output of the classify-patch task in bugbug.
+  riskAnalysisFeatures.forEach(f => f.shap = Number(f.shap));
 
   let riskAnalysisLegend = document.createElement("div");
   let riskAnalysisLegendUl = document.createElement("ul");
   riskAnalysisLegendUl.style["list-style-type"] = "upper-roman";
-  let featureCount = 3;
+  let featureCount = 7;
+  let chosenFeatures = [];
   for (let riskAnalysisFeature of riskAnalysisFeatures) {
     let index = riskAnalysisFeature["index"];
     let name = riskAnalysisFeature["name"];
-    let shap_value = Number(riskAnalysisFeature["shap"]);
+    let shap_value = riskAnalysisFeature["shap"];
     let value = riskAnalysisFeature["value"];
 
     let monotonicity = riskAnalysisFeature["spearman"][0];
@@ -82,25 +114,35 @@ async function injectOverallResults(diffID, diffDetail) {
     // If it contributes negatively to the prediction, it is monotonic positive and its value is closer to the median for bug-introducing commits rather than clean.
     if (shap_value > 0 && monotonicity > 0 && Math.abs(value - median_bug_introducing) < Math.abs(value - median_clean)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_higher_than_median"]);
+      if (perc < 55) {
+        continue;
+      }
       message = `<b>${name}</b> is <span style="font-weight:bold;color:${RED}">too large</span> (${value}), as in ${perc}% of patches introducing regressions.`;
     }
     // If it contributes negatively to the prediction, it is monotonic negative and its value is closer to the median for buggy commits rather than clean.
     else if (shap_value > 0 && monotonicity < 0 && Math.abs(value - median_bug_introducing) < Math.abs(value - median_clean)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_lower_than_median"]);
+      if (perc < 55) {
+        continue;
+      }
       message = `<b>${name}</b> is <span style="font-weight:bold;color:${RED}">too small</span> (${value}), as in ${perc}% of patches introducing regressions.`;
     }
-    // XXX: For now, we only want to show features which are increasing the risk, not features which are driving it down.
     // If it contributes positively to the prediction, it is monotonic positive and its value is closer to the median for clean commits rather than bug-introducing.
-    /* else if (shap_value < 0 && monotonicity > 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
+    else if (shap_value < 0 && monotonicity > 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
       let perc = Math.round(100 * riskAnalysisFeature["perc_clean_values_lower_than_median"]);
-      message = `${index}. ${name} is <span style="font-weight:bold;color:${BLUE}">low</span> (${value}), as in ${perc}% of patches not introducing regressions.`;
+      if (perc < 55) {
+        continue;
+      }
+      message = `<b>${name}</b> is <span style="font-weight:bold;color:${BLUE}">small</span> (${value}), as in ${perc}% of patches not introducing regressions.`;
     }
     // If it contributes positively to the prediction, it is monotonic negative and its value is closer to the median for clean commits rather than bug-introducing
     else if (shap_value < 0 && monotonicity < 0 && Math.abs(value - median_clean) < Math.abs(value - median_bug_introducing)) {
-      let perc = Math.round(100 * riskAnalysisFeature["perc_buggy_values_higher_than_median"]);
-      console.log(riskAnalysisFeature);
-      message = `${index}. ${name} is <span style="font-weight:bold;color:${BLUE}">high</span> (${value}), as in ${perc}% of patches not introducing regressions.`;
-    } */
+      let perc = Math.round(100 * riskAnalysisFeature["perc_clean_values_higher_than_median"]);
+      if (perc < 55) {
+        continue;
+      }
+      message = `<b>${name}</b> is <span style="font-weight:bold;color:${BLUE}">large</span> (${value}), as in ${perc}% of patches not introducing regressions.`;
+    }
     // We can't say much otherwise, e.g. a case like:
     // # of times the components were touched before (max)
     // shap value: +0.14288196611463377
@@ -111,9 +153,21 @@ async function injectOverallResults(diffID, diffDetail) {
 
     if (message) {
       let riskAnalysisLegendLi = document.createElement("li");
+      riskAnalysisLegendLi.id = `feature_${index}_text`;
       riskAnalysisLegendLi.innerHTML = message;
-      riskAnalysisLegendLi.style["margin-left"] = "15px";
+      riskAnalysisLegendLi.style["margin-left"] = "28px";
+      riskAnalysisLegendLi.index = index;
+
+      riskAnalysisLegendLi.onmouseenter = function(event) {
+        highlight(event.target.index);
+      }
+      riskAnalysisLegendLi.onmouseleave = function(event) {
+        dehighlight(event.target.index);
+      }
+
       riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
+
+      chosenFeatures.push(index);
 
       featureCount--;
       if (featureCount == 0) {
@@ -121,6 +175,9 @@ async function injectOverallResults(diffID, diffDetail) {
       }
     }
   }
+
+  riskAnalysisFeatures = riskAnalysisFeatures.filter(f => chosenFeatures.includes(f.index));
+
   riskAnalysisLegend.appendChild(riskAnalysisLegendUl);
   riskAnalysisContent.appendChild(riskAnalysisLegend);
 
@@ -134,6 +191,112 @@ async function injectOverallResults(diffID, diffDetail) {
   riskAnalysisContent.appendChild(riskAnalysisOverallFeatures);
 
   diffDetailBox.parentNode.insertBefore(riskAnalysisBox, diffDetailBox.nextSibling);
+
+  let svg = d3.select("#riskAnalysisGraph")
+    .append("svg")
+    .attr("width", riskAnalysisGraph.clientWidth)
+    .attr("height", riskAnalysisGraph.height);
+
+  let margin = {
+    top: 30,
+    right: 20,
+    bottom: 30,
+    left: 20
+  };
+  let width = +svg.attr("width") - margin.left - margin.right;
+  let height = +svg.attr("height") - margin.top - margin.bottom;
+
+  let x = d3.scaleLinear().range([0, width]);
+  let y = d3.scaleBand().range([height, 0]).padding(0.1);
+
+  let z = d3.scaleOrdinal()
+    .range([RED, BLUE]);
+
+  let g = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  //Container for the gradients
+  let defs = svg.append("defs");
+
+  //Filter for the outside glow
+  let filter = defs.append("filter")
+    .attr("id","glow");
+  filter.append("feGaussianBlur")
+    .attr("stdDeviation","3.5")
+    .attr("result","coloredBlur");
+  let feMerge = filter.append("feMerge");
+  feMerge.append("feMergeNode")
+    .attr("in","coloredBlur");
+  feMerge.append("feMergeNode")
+    .attr("in","SourceGraphic");
+
+  riskAnalysisFeatures.sort((a, b) => {
+    if (a.shap > 0 && b.shap < 0) {
+      return -1;
+    } else if (a.shap < 0 && b.shap > 0) {
+      return 1;
+    } else {
+      return a.shap - b.shap;
+    }
+  });
+
+  let start = 0;
+  for (let feature of riskAnalysisFeatures) {
+    feature.start = start;
+    feature.end = Math.abs(feature.shap) + start;
+    start = feature.end;
+  }
+
+  x.domain([0, d3.max(riskAnalysisFeatures, f => f.end)]);
+  z.domain([true, false]);
+
+  g.append("g")
+   .attr("transform", `translate(0,${height})`)
+   .call(d3.axisBottom(x).tickFormat(""));
+
+  if (riskAnalysisFeatures.some(f => f.shap > 0)) {
+    g.append("text")
+     .attr("x", d3.max(riskAnalysisFeatures, f => {
+      if (f.shap < 0) {
+        return Number.NEGATIVE_INFINITY;
+      }
+
+      return x(f.end);
+    }) - 8)
+     .attr("text-anchor", "end")
+     .attr("y", -5)
+     .attr("fill", RED)
+     .attr("font-size", 12)
+     .text(() => "increasing risk →");
+  }
+
+  if (riskAnalysisFeatures.some(f => f.shap < 0)) {
+    g.append("text")
+     .attr("x", d3.min(riskAnalysisFeatures, f => {
+      if (f.shap > 0) {
+        return Number.POSITIVE_INFINITY;
+      }
+
+      return x(f.start);
+    }) + 5)
+     .attr("text-anchor", "start")
+     .attr("y", -5)
+     .attr("fill", BLUE)
+     .attr("font-size", 12)
+     .text(() => "← decreasing risk");
+  }
+
+  g.selectAll(".bar")
+   .data(riskAnalysisFeatures)
+   .enter().append("rect")
+   .attr("id", f => `feature_${f.index}_bar`)
+   .attr("fill", f => z(f.shap > 0))
+   .attr("class", "bar")
+   .attr("x", f => x(f.start))
+   .attr("height", y.bandwidth())
+   .attr("width", f => x(f.end) - x(f.start) - 3)
+   .on("mouseenter", f => highlight(f.index))
+   .on("mouseleave", f => dehighlight(f.index));
 }
 
 function createInlineComment(inlineCommentText) {

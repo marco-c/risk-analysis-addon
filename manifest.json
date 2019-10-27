@@ -10,7 +10,7 @@
   "content_scripts": [
     {
       "matches": ["*://phabricator.services.mozilla.com/D*"],
-      "js": ["risk_analysis.js"],
+      "js": ["d3.v5.js", "risk_analysis.js"],
       "run_at": "document_idle"
     }
   ],
