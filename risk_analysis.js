@@ -98,7 +98,7 @@ async function injectOverallResults(diffID, diffDetail) {
   let riskAnalysisLegend = document.createElement("div");
   let riskAnalysisLegendUl = document.createElement("ul");
   riskAnalysisLegendUl.style["list-style-type"] = "upper-roman";
-  let featureCount = 7;
+  let featureCount = 5;
   let chosenFeatures = [];
   for (let riskAnalysisFeature of riskAnalysisFeatures) {
     let index = riskAnalysisFeature["index"];
