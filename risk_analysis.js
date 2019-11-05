@@ -366,7 +366,7 @@ function createInlineComment(inlineCommentText) {
 async function injectMethodLevelResults(diffID) {
   let methods = await getMethodLevelRiskAnalysisResults(diffID);
 
-  methods = methods.filter(method => method["prediction"]);
+  methods = methods.filter(method => method["prediction"] == "TRUE");
 
   let blocks = document.querySelectorAll("div[data-sigil=differential-changeset]");
   for (let block of blocks) {
