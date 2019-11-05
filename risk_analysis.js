@@ -104,7 +104,7 @@ async function injectOverallResults(diffID, diffDetail) {
     let index = riskAnalysisFeature["index"];
     let name = riskAnalysisFeature["name"];
     let shap_value = riskAnalysisFeature["shap"];
-    let value = riskAnalysisFeature["value"];
+    let value = Math.round(riskAnalysisFeature["value"]);
 
     let monotonicity = riskAnalysisFeature["spearman"][0];
     let median_bug_introducing = riskAnalysisFeature["median_bug_introducing"];
