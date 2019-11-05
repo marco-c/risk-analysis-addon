@@ -384,7 +384,9 @@ async function injectMethodLevelResults(diffID) {
         if (method["file_name"] == fileName && lineNumber >= method["method_start_line"]) {
           methods.splice(i, 1);
 
-          let inlineComment = createInlineComment(`The function '${method["method_name"]}' is risky.`);
+          const confidence = Math.round(100 * method["prediction_true"]);
+
+          let inlineComment = createInlineComment(`The function '${method["method_name"]}' is risky (${confidence}% confidence).`);
 
           line.parentNode.parentNode.insertBefore(inlineComment, line.parentNode.nextSibling);
         }
