@@ -5,7 +5,7 @@
 'use strict';
 
 function getRiskAnalysisURL(diffID, artifact) {
-  return `https://index.taskcluster.net/v1/task/project.relman.bugbug.classify_patch.diff.${diffID}/artifacts/public/${artifact}`;
+  return `https://community-tc.services.mozilla.com/api/index/v1/task/project.relman.bugbug.classify_patch.diff.${diffID}/artifacts/public/${artifact}`;
 }
 
 async function getRiskAnalysisResult(diffID) {
@@ -190,7 +190,7 @@ async function injectOverallResults(diffID, diffDetail) {
 
   let riskAnalysisOverallFeatures = document.createElement("a");
   riskAnalysisOverallFeatures.textContent = "See the most important features considered by the model";
-  riskAnalysisOverallFeatures.href = "https://index.taskcluster.net/v1/task/project.relman.bugbug.train_regressor.latest/artifacts/public/feature_importance.png";
+  riskAnalysisOverallFeatures.href = "https://community-tc.services.mozilla.com/api/index/v1/task/project.relman.bugbug.train_regressor.latest/artifacts/public/feature_importance.png";
   riskAnalysisOverallFeatures.target = "_blank";
   riskAnalysisOverallFeatures.style.fontSize = "x-small";
   riskAnalysisContent.appendChild(riskAnalysisOverallFeatures);
