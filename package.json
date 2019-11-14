@@ -1,6 +1,6 @@
 {
   "name": "gecko-risk-analysis",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Extension that shows risk analysis results on Phabricator.",
   "dependencies": {},
   "peerDependencies": {
