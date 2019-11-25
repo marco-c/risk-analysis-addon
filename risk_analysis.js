@@ -150,11 +150,9 @@ async function injectOverallResults(diffID, diffDetail) {
     // value:  22052.0
     // mean for y == 0 is: 4921.635160123906
     // mean for y == 1 is: 4079.935478215131
-    /*else if (shap_value > 0) {
+    else {
       message = `<b>${name}</b> (${value})`;
-    } else if (shap_value < 0) {
-      message = `<b>${name}</b> (${value})`;
-    }*/
+    }
 
     if (message) {
       let riskAnalysisLegendLi = document.createElement("li");
