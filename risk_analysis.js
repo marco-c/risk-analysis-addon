@@ -55,6 +55,7 @@ async function injectOverallResults(diffID, diffDetail) {
   let riskAnalysisTitleRiskyText = document.createElement("span");
   riskAnalysisTitleRiskyText.textContent = riskyText;
   riskAnalysisTitleRiskyText.style.color = riskyColor;
+  riskAnalysisTitle.innerHTML = '';
   riskAnalysisTitle.appendChild(document.createTextNode("Diff Risk Analysis - "));
   riskAnalysisTitle.appendChild(riskAnalysisTitleRiskyText);
   riskAnalysisTitle.appendChild(document.createTextNode(` with ${confidence}% confidence`));
