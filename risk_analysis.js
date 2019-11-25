@@ -59,7 +59,7 @@ async function injectOverallResults(diffID, diffDetail) {
       .transition()
       .ease(d3.easeCubic)
       .duration('200')
-      .style("font-size", "21px");
+      .style("background-color", chosenFeatures[index] ? RED : BLUE);
 
     d3.select(`#feature_${index}_bar`)
       .transition()
@@ -73,7 +73,7 @@ async function injectOverallResults(diffID, diffDetail) {
       .transition()
       .ease(d3.easeCubic)
       .duration('200')
-      .style("font-size", null);
+      .style("background-color", null);
 
     d3.select(`#feature_${index}_bar`)
       .transition()
@@ -99,7 +99,7 @@ async function injectOverallResults(diffID, diffDetail) {
   let riskAnalysisLegendUl = document.createElement("ul");
   riskAnalysisLegendUl.style["list-style-type"] = "upper-roman";
   let featureCount = 5;
-  let chosenFeatures = [];
+  let chosenFeatures = {};
   for (let riskAnalysisFeature of riskAnalysisFeatures) {
     let index = riskAnalysisFeature["index"];
     let name = riskAnalysisFeature["name"];
@@ -172,7 +172,7 @@ async function injectOverallResults(diffID, diffDetail) {
 
       riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
 
-      chosenFeatures.push(index);
+      chosenFeatures[index] = shap_value > 0;
 
       featureCount--;
       if (featureCount == 0) {
@@ -181,7 +181,7 @@ async function injectOverallResults(diffID, diffDetail) {
     }
   }
 
-  riskAnalysisFeatures = riskAnalysisFeatures.filter(f => chosenFeatures.includes(f.index));
+  riskAnalysisFeatures = riskAnalysisFeatures.filter(f => chosenFeatures.hasOwnProperty(f.index));
 
   riskAnalysisLegend.appendChild(riskAnalysisLegendUl);
   riskAnalysisContent.appendChild(riskAnalysisLegend);
