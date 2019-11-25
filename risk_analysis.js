@@ -52,7 +52,12 @@ async function injectOverallResults(diffID, diffDetail) {
   let riskAnalysisBox = diffDetailBox.cloneNode(true);
 
   let riskAnalysisTitle = riskAnalysisBox.querySelector("span.phui-header-header");
-  riskAnalysisTitle.innerHTML = `Diff Risk Analysis - <span style="color:${riskyColor};">${riskyText}</span> with ${confidence}% confidence`;
+  let riskAnalysisTitleRiskyText = document.createElement("span");
+  riskAnalysisTitleRiskyText.textContent = riskyText;
+  riskAnalysisTitleRiskyText.style.color = riskyColor;
+  riskAnalysisTitle.appendChild(document.createTextNode("Diff Risk Analysis - "));
+  riskAnalysisTitle.appendChild(riskAnalysisTitleRiskyText);
+  riskAnalysisTitle.appendChild(document.createTextNode(` with ${confidence}% confidence`));
 
   function highlight(index) {
     d3.select(`#feature_${index}_text`)
