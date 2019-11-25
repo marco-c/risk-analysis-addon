@@ -165,7 +165,30 @@ async function injectOverallResults(diffID, diffDetail) {
       riskAnalysisLegendText.id = `feature_${index}_text`;
       riskAnalysisLegendText.innerHTML = message;
 
+      let riskAnalysisFeaturePlot = document.createElement("img");
+      riskAnalysisFeaturePlot.id = `feature_${index}_plot`;
+      riskAnalysisFeaturePlot.src = `data:image/png;base64,${riskAnalysisFeature["plot"]}`;
+      riskAnalysisFeaturePlot.style.maxWidth = "95%";
+      riskAnalysisFeaturePlot.style.display = "none";
+
+      let riskAnalysisLegendShowPlotLink = document.createElement("a");
+      riskAnalysisLegendShowPlotLink.textContent = "Show feature plot";
+      riskAnalysisLegendShowPlotLink.style.fontSize = "x-small";
+      riskAnalysisLegendShowPlotLink.onclick = function(event) {
+        let plotElem = document.getElementById(`feature_${event.target.parentElement.index}_plot`);
+        if (event.target.textContent == "Show feature plot") {
+          plotElem.style.display = null;
+          event.target.textContent = "Hide feature plot";
+        } else {
+          plotElem.style.display = "none";
+          event.target.textContent = "Show feature plot";
+        }
+      };
+
       riskAnalysisLegendLi.appendChild(riskAnalysisLegendText);
+      riskAnalysisLegendLi.appendChild(document.createTextNode(" "));
+      riskAnalysisLegendLi.appendChild(riskAnalysisLegendShowPlotLink);
+      riskAnalysisLegendLi.appendChild(riskAnalysisFeaturePlot);
 
       riskAnalysisLegendText.onmouseenter = function(event) {
         highlight(event.target.parentElement.index);
