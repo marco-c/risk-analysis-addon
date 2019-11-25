@@ -158,16 +158,20 @@ async function injectOverallResults(diffID, diffDetail) {
 
     if (message) {
       let riskAnalysisLegendLi = document.createElement("li");
-      riskAnalysisLegendLi.id = `feature_${index}_text`;
-      riskAnalysisLegendLi.innerHTML = message;
       riskAnalysisLegendLi.style["margin-left"] = "28px";
       riskAnalysisLegendLi.index = index;
 
-      riskAnalysisLegendLi.onmouseenter = function(event) {
-        highlight(event.target.index);
+      let riskAnalysisLegendText = document.createElement("span");
+      riskAnalysisLegendText.id = `feature_${index}_text`;
+      riskAnalysisLegendText.innerHTML = message;
+
+      riskAnalysisLegendLi.appendChild(riskAnalysisLegendText);
+
+      riskAnalysisLegendText.onmouseenter = function(event) {
+        highlight(event.target.parentElement.index);
       }
-      riskAnalysisLegendLi.onmouseleave = function(event) {
-        dehighlight(event.target.index);
+      riskAnalysisLegendText.onmouseleave = function(event) {
+        dehighlight(event.target.parentElement.index);
       }
 
       riskAnalysisLegendUl.appendChild(riskAnalysisLegendLi);
