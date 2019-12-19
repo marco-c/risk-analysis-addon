@@ -4,6 +4,8 @@
 
 'use strict';
 
+const BUG_ID_RE = /Bug (\d+)/;
+
 function getRiskAnalysisURL(diffID, artifact) {
   return `https://community-tc.services.mozilla.com/api/index/v1/task/project.relman.bugbug.classify_patch.diff.${diffID}/artifacts/public/${artifact}`;
 }
@@ -396,69 +398,56 @@ function createInlineComment(inlineCommentElems) {
   return inlineRow;
 }
 
-async function injectMethodLevelResults(diffID) {
-  let methods = await getMethodLevelRiskAnalysisResults(diffID);
+function injectMethodLevelResultsBlock(methods, block) {
+  let fileName = block.querySelector("h1.differential-file-icon-header").textContent;
 
-  methods = methods.filter(method => method["prediction"] == "TRUE");
+  let lines = block.querySelectorAll("table.differential-diff tbody tr td:nth-child(3)");
+  for (let line of lines) {
+    let lineNumber = parseInt(line.getAttribute("data-n"));
+    if (isNaN(lineNumber)) {
+      continue;
+    }
 
-  let bugIDre = /Bug (\d+)/;
+    for (let i = methods.length - 1; i >= 0; i--) {
+      let method = methods[i];
+      if (method["file_name"] == fileName && lineNumber >= method["method_start_line"]) {
+        methods.splice(i, 1);
 
-  let blocks = document.querySelectorAll("div[data-sigil=differential-changeset]");
-  for (let block of blocks) {
-    let fileName = block.querySelector("h1.differential-file-icon-header").textContent;
+        const confidence = Math.round(100 * method["prediction_true"]);
 
-    let lines = block.querySelectorAll("table.differential-diff tbody tr td:nth-child(3)");
-    for (let line of lines) {
-      let lineNumber = parseInt(line.getAttribute("data-n"));
-      if (isNaN(lineNumber)) {
-        continue;
-      }
+        let past_bugs = "past_bugs" in method ? method["past_bugs"] : [];
 
-      for (let i = methods.length - 1; i >= 0; i--) {
-        let method = methods[i];
-        if (method["file_name"] == fileName && lineNumber >= method["method_start_line"]) {
-          methods.splice(i, 1);
+        let pastBugsUl = document.createElement("ul");
+        pastBugsUl.style["list-style-type"] = "disc";
+        for (let past_bug of past_bugs) {
+          let pastBugLi = document.createElement("li");
+          pastBugLi.style["margin-left"] = "14px";
 
-          const confidence = Math.round(100 * method["prediction_true"]);
+          let bugIDmatch = past_bug.match(BUG_ID_RE);
 
-          let past_bugs = "past_bugs" in method ? method["past_bugs"] : [];
+          let pastBugLink = document.createElement("a");
+          pastBugLink.textContent = bugIDmatch[0];
+          pastBugLink.href = `https://bugzilla.mozilla.org/show_bug.cgi?id=${bugIDmatch[1]}`;
+          pastBugLink.target = "_blank";
 
-          let pastBugsUl = document.createElement("ul");
-          pastBugsUl.style["list-style-type"] = "disc";
-          for (let past_bug of past_bugs) {
-            let pastBugLi = document.createElement("li");
-            pastBugLi.style["margin-left"] = "14px";
+          pastBugLi.appendChild(pastBugLink);
+          pastBugLi.appendChild(document.createTextNode(past_bug.substr(bugIDmatch[0].length)));
 
-            let bugIDmatch = past_bug.match(bugIDre);
-
-            let pastBugLink = document.createElement("a");
-            pastBugLink.textContent = bugIDmatch[0];
-            pastBugLink.href = `https://bugzilla.mozilla.org/show_bug.cgi?id=${bugIDmatch[1]}`;
-            pastBugLink.target = "_blank";
-
-            pastBugLi.appendChild(pastBugLink);
-            pastBugLi.appendChild(document.createTextNode(past_bug.substr(bugIDmatch[0].length)));
-
-            pastBugsUl.appendChild(pastBugLi);
-          }
-
-          let inlineCommentElems = [document.createTextNode(`The function '${method["method_name"]}' is risky (${confidence}% confidence).`)];
-          if (past_bugs.length > 0) {
-            inlineCommentElems = inlineCommentElems.concat([
-              document.createElement("br"),
-              document.createTextNode(`Recent past bugs in this function:`),
-              pastBugsUl,
-            ]);
-          }
-
-          let inlineComment = createInlineComment(inlineCommentElems);
-
-          line.parentNode.parentNode.insertBefore(inlineComment, line.parentNode.nextSibling);
+          pastBugsUl.appendChild(pastBugLi);
         }
-      }
 
-      if (methods.length == 0) {
-        break;
+        let inlineCommentElems = [document.createTextNode(`The function '${method["method_name"]}' is risky (${confidence}% confidence).`)];
+        if (past_bugs.length > 0) {
+          inlineCommentElems = inlineCommentElems.concat([
+            document.createElement("br"),
+            document.createTextNode(`Recent past bugs in this function:`),
+            pastBugsUl,
+          ]);
+        }
+
+        let inlineComment = createInlineComment(inlineCommentElems);
+
+        line.parentNode.parentNode.insertBefore(inlineComment, line.parentNode.nextSibling);
       }
     }
 
@@ -466,6 +455,22 @@ async function injectMethodLevelResults(diffID) {
       break;
     }
   }
+}
+
+async function injectMethodLevelResults(diffID) {
+  let methods = await getMethodLevelRiskAnalysisResults(diffID);
+
+  methods = methods.filter(method => method["prediction"] == "TRUE");
+
+  document.querySelectorAll('div[data-sigil=differential-changeset]').forEach(block => {
+    let timeoutID = setTimeout(() => injectMethodLevelResultsBlock(methods, block), 3000);
+
+    let observer = new MutationObserver(() => {
+      clearTimeout(timeoutID);
+      injectMethodLevelResultsBlock(methods, block);
+    });
+    observer.observe(block, { childList: true, subtree: true });
+  });
 }
 
 const diffIDPattern = RegExp(/Diff (\d+)/);
