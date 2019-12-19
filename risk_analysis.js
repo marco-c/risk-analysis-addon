@@ -335,7 +335,7 @@ async function injectOverallResults(diffID, diffDetail) {
    .on("mouseleave", f => dehighlight(f.index));
 }
 
-function createInlineComment(inlineCommentText) {
+function createInlineComment(inlineCommentElems) {
   let inlineRow = document.createElement("tr");
   inlineRow.classList.add("inline");
   inlineRow.setAttribute("data-sigil", "inline-row");
@@ -375,7 +375,9 @@ function createInlineComment(inlineCommentText) {
   inlineCommentDivContentContent.classList.add("phabricator-remarkup");
 
   let inlineCommentDivContentContentP = document.createElement("p");
-  inlineCommentDivContentContentP.textContent = inlineCommentText;
+  for (let inlineCommentElem of inlineCommentElems) {
+    inlineCommentDivContentContentP.appendChild(inlineCommentElem);
+  }
 
   inlineCommentDivContentContent.appendChild(inlineCommentDivContentContentP);
 
@@ -399,6 +401,8 @@ async function injectMethodLevelResults(diffID) {
 
   methods = methods.filter(method => method["prediction"] == "TRUE");
 
+  let bugIDre = /Bug (\d+)/;
+
   let blocks = document.querySelectorAll("div[data-sigil=differential-changeset]");
   for (let block of blocks) {
     let fileName = block.querySelector("h1.differential-file-icon-header").textContent;
@@ -417,7 +421,37 @@ async function injectMethodLevelResults(diffID) {
 
           const confidence = Math.round(100 * method["prediction_true"]);
 
-          let inlineComment = createInlineComment(`The function '${method["method_name"]}' is risky (${confidence}% confidence).`);
+          let past_bugs = "past_bugs" in method ? method["past_bugs"] : [];
+
+          let pastBugsUl = document.createElement("ul");
+          pastBugsUl.style["list-style-type"] = "disc";
+          for (let past_bug of past_bugs) {
+            let pastBugLi = document.createElement("li");
+            pastBugLi.style["margin-left"] = "14px";
+
+            let bugIDmatch = past_bug.match(bugIDre);
+
+            let pastBugLink = document.createElement("a");
+            pastBugLink.textContent = bugIDmatch[0];
+            pastBugLink.href = `https://bugzilla.mozilla.org/show_bug.cgi?id=${bugIDmatch[1]}`;
+            pastBugLink.target = "_blank";
+
+            pastBugLi.appendChild(pastBugLink);
+            pastBugLi.appendChild(document.createTextNode(past_bug.substr(bugIDmatch[0].length)));
+
+            pastBugsUl.appendChild(pastBugLi);
+          }
+
+          let inlineCommentElems = [document.createTextNode(`The function '${method["method_name"]}' is risky (${confidence}% confidence).`)];
+          if (past_bugs.length > 0) {
+            inlineCommentElems = inlineCommentElems.concat([
+              document.createElement("br"),
+              document.createTextNode(`Recent past bugs in this function:`),
+              pastBugsUl,
+            ]);
+          }
+
+          let inlineComment = createInlineComment(inlineCommentElems);
 
           line.parentNode.parentNode.insertBefore(inlineComment, line.parentNode.nextSibling);
         }
