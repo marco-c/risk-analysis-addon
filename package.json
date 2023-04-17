@@ -9,7 +9,7 @@
   "devDependencies": {
     "eslint-plugin-mozilla": "^0.9.0",
     "eslint-plugin-no-unsanitized": "^4.0.2",
-    "web-ext": "^5.5.0"
+    "web-ext": "^7.6.1"
   },
   "scripts": {
     "lint": "eslint *.js",
