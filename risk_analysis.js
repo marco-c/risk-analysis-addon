@@ -7,7 +7,7 @@
 const BUG_ID_RE = /Bug (\d+)/;
 
 function getRiskAnalysisURL(diffID, artifact) {
-  return `https://community-tc.services.mozilla.com/api/index/v1/task/project.relman.bugbug.classify_patch.diff.${diffID}/artifacts/public/${artifact}`;
+  return `https://community-tc.services.mozilla.com/api/index/v1/task/project.bugbug.classify_patch.diff.${diffID}/artifacts/public/${artifact}`;
 }
 
 async function getRiskAnalysisResult(diffID) {
