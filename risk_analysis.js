@@ -11,7 +11,7 @@ function getRiskAnalysisURL(diffID, artifact) {
 }
 
 async function getRiskAnalysisResult(diffID) {
-  const response = await fetch(getRiskAnalysisURL(diffID, "probs.json"));
+  const response = await fetch(getRiskAnalysisURL(diffID, "results.json"));
   if (!response.ok) {
     throw new Error("Error fetching risk analysis results for this diff.");
   }
@@ -45,8 +45,8 @@ async function injectOverallResults(diffID, diffDetail) {
   const RED = "rgb(255, 13, 87)";
   const BLUE = "rgb(30, 136, 229)";
 
-  const nonRiskyProb = riskAnalysisResult[0];
-  const riskyProb = riskAnalysisResult[1];
+  const nonRiskyProb = riskAnalysisResult["probs"][0];
+  const riskyProb = riskAnalysisResult["probs"][1];
   const riskyText = riskyProb > nonRiskyProb ? "Risky" : "Not risky"
   const riskyColor = riskyProb > nonRiskyProb ? RED : BLUE;
   const confidence = Math.round(100 * (riskyProb > nonRiskyProb ? riskyProb : nonRiskyProb));
